@@ -10,7 +10,7 @@ let
     pydantic
     loguru
     pytest
-    # textual not in nixpkgs, will install via pip
+    questionary
   ]);
 in
 pkgs.mkShell {
@@ -21,9 +21,5 @@ pkgs.mkShell {
   shellHook = ''
     echo "Neurobik development environment"
     export PYTHONPATH=$PWD:$PYTHONPATH
-    # Create virtualenv and install textual
-    python3 -m venv .venv
-    source .venv/bin/activate
-    pip install textual
   '';
 }
