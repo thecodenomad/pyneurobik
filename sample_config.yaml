@@ -1,0 +1,10 @@
+model_provider: ollama
+oci_provider: podman
+models:
+  - name: qwen3:0.6b 
+    location: $HOME/models/llama.gguf
+    confirmation_file: $HOME/models/.llama_downloaded
+    checksum: abc123  # placeholder
+oci:
+  - image: docker.io/library/alpine:latest
+    confirmation_file: $HOME/images/.alpine_pulled
