@@ -10,6 +10,7 @@ let
     pydantic
     loguru
     pytest
+    pytest-cov
     questionary
   ]);
 in

@@ -62,3 +62,7 @@ pip install -r requirements.txt  # Hypothetical, or install from pyproject.toml
 pip install -e .
 pytest
 ```
+
+## Acknowledgements
+
+This project was developed with assistance from [opencode](https://opencode.ai) (Grok Code Fast 1), an AI-powered coding assistant that aided in planning, implementation, testing, and documentation. Special thanks to the opencode team for their support in building robust, well-tested software. 🚀
