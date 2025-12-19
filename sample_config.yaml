@@ -1,8 +1,8 @@
 model_provider: ollama
 oci_provider: podman
 models:
-  - name: qwen3:0.6b 
-    location: $HOME/models/llama.gguf
+  - name: TheBloke/Llama-2-7B-Chat-GGUF/llama-2-7b-chat.Q4_K_M.gguf
+    location: $HOME/models/llama-2-7b-chat.Q4_K_M.gguf
     confirmation_file: $HOME/models/.llama_downloaded
     checksum: abc123  # placeholder
 oci:

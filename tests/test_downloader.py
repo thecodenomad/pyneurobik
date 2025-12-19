@@ -12,7 +12,7 @@ def sample_config():
         "oci_provider": "podman",
         "models": [
             {
-                "name": "test-model",
+                "name": "test/repo/model.gguf",
                 "location": "/tmp/test-model.gguf",
                 "confirmation_file": "/tmp/test-model.confirmed",
                 "checksum": "dummy"

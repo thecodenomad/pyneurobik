@@ -12,6 +12,7 @@ let
     pytest
     pytest-cov
     questionary
+    huggingface-hub
   ]);
 in
 pkgs.mkShell {

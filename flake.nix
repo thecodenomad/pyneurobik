@@ -34,6 +34,7 @@
               pydantic
               loguru
               questionary
+              huggingface-hub
             ];
 
             meta = {

@@ -32,11 +32,13 @@ class Downloader:
 
     def pull_model(self, provider: str, name: str, location: str, confirmation_file: str):
         os.makedirs(os.path.dirname(location), exist_ok=True)
-        if provider == 'ollama':
-            subprocess.run(['ollama', 'pull', name], check=True)
-        elif provider in ['llama.cpp', 'ramalama']:
-            # Assume HF download for simplicity
-            self.download_file(f"https://huggingface.co/{name}/resolve/main/model.gguf", location)
+        if '/' not in name:
+            raise ValueError(f"Model name must be in 'repo/filename' format for Hugging Face download, got: {name}")
+        parts = name.split('/')
+        repo = '/'.join(parts[:-1])
+        filename = parts[-1]
+        dest_dir = os.path.dirname(location)
+        subprocess.run(['hf', 'download', repo, filename, '--local-dir', dest_dir], check=True)
         create_confirmation_file(confirmation_file)
 
     def pull_oci(self, image: str, confirmation_file: str, containerfile: Optional[str] = None, build_args: Optional[List[str]] = None):
@@ -56,3 +58,8 @@ class Downloader:
     def check_podman():
         if not shutil.which('podman'):
             raise RuntimeError("Podman not installed")
+
+    @staticmethod
+    def check_huggingface_cli():
+        if not shutil.which('hf'):
+            raise RuntimeError("hf CLI not installed. Install with: pip install huggingface_hub")
