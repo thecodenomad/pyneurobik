@@ -42,10 +42,11 @@ class Downloader:
     def pull_oci(self, image: str, confirmation_file: str, containerfile: Optional[str] = None, build_args: Optional[List[str]] = None):
         os.makedirs(os.path.dirname(confirmation_file), exist_ok=True)
         if containerfile:
-            cmd = ['podman', 'build']
+            context = os.path.dirname(containerfile)
+            cmd = ['podman', 'build', '-t', image]
             if build_args:
                 cmd.extend(build_args)
-            cmd.extend(['-f', containerfile, '.'])
+            cmd.extend(['-f', containerfile, context])
             subprocess.run(cmd, check=True)
         else:
             subprocess.run(['podman', 'pull', image], check=True)

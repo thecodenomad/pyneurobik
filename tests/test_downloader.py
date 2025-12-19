@@ -102,18 +102,44 @@ def test_download_file_success(mock_get, sample_config):
 def test_download_file_checksum_mismatch(mock_get, sample_config):
     cfg = Config.from_yaml(sample_config)
     downloader = Downloader()
-    
+
     # Mock requests
     mock_response = mock_get.return_value
     mock_response.raise_for_status.return_value = None
     mock_response.headers = {'content-length': '4'}
     mock_response.iter_content.return_value = [b'test']
-    
+
     model = cfg.models[0]
     dest = model.location
     with pytest.raises(ValueError, match="Checksum mismatch"):
         downloader.download_file("http://example.com", dest, "wrong")
-    
+
     # Cleanup if exists
     if os.path.exists(dest):
         os.unlink(dest)
+
+@patch('neurobik.downloader.subprocess.run')
+def test_pull_oci_with_containerfile(mock_subprocess):
+    downloader = Downloader()
+
+    # Mock successful subprocess call
+    mock_subprocess.return_value.returncode = 0
+
+    containerfile = "/path/to/Containerfile"
+    image = "test-image:latest"
+    confirmation_file = "/tmp/test.confirmed"
+    build_args = ["--build-arg", "ARG1=value1"]
+
+    downloader.pull_oci(image, confirmation_file, containerfile, build_args)
+
+    # Check that subprocess.run was called with correct arguments
+    expected_cmd = [
+        'podman', 'build', '-t', image,
+        '--build-arg', 'ARG1=value1',
+        '-f', containerfile, '/path/to'
+    ]
+    mock_subprocess.assert_called_once_with(expected_cmd, check=True)
+
+    # Check confirmation file was created
+    assert os.path.exists(confirmation_file)
+    os.unlink(confirmation_file)
