@@ -7,56 +7,69 @@
 
   outputs = { self, nixpkgs }:
     let
-      system = "x86_64-linux";  # Adjust for your system
-      pkgs = nixpkgs.legacyPackages.${system};
-      python = pkgs.python3;
+      supportedSystems = [ "x86_64-linux" "aarch64-linux" ];
+      forAllSystems = f: nixpkgs.lib.genAttrs supportedSystems (system: f system);
     in {
-      packages.${system}.neurobik = python.pkgs.buildPythonPackage {
-        pname = "neurobik";
-        version = "0.1.0";
-        src = ./.;
-        format = "pyproject";
+      packages = forAllSystems (system:
+        let
+          pkgs = nixpkgs.legacyPackages.${system};
+          python = pkgs.python3;
+        in {
+          neurobik = python.pkgs.buildPythonPackage {
+            pname = "neurobik";
+            version = "0.1.0";
+            src = ./.;
+            format = "pyproject";
 
-        nativeBuildInputs = with python.pkgs; [
-          setuptools
-          wheel
-        ];
+            nativeBuildInputs = with python.pkgs; [
+              setuptools
+              wheel
+            ];
 
-        propagatedBuildInputs = with python.pkgs; [
-          requests
-          tqdm
-          pyyaml
-          click
-          pydantic
-          loguru
-          questionary
-        ];
+            propagatedBuildInputs = with python.pkgs; [
+              requests
+              tqdm
+              pyyaml
+              click
+              pydantic
+              loguru
+              questionary
+            ];
 
-        meta = {
-          description = "CLI tool for downloading AI models and OCI images";
-          license = pkgs.lib.licenses.gpl3;
-        };
-      };
+            meta = {
+              description = "CLI tool for downloading AI models and OCI images";
+              license = pkgs.lib.licenses.gpl3;
+            };
+          };
 
-      packages.${system}.default = self.packages.${system}.neurobik;
+          default = self.packages.${system}.neurobik;
+        }
+      );
 
-      devShells.${system}.default = pkgs.mkShell {
-        buildInputs = [
-          python
-          python.pkgs.pip
-          python.pkgs.requests
-          python.pkgs.tqdm
-          python.pkgs.pyyaml
-          python.pkgs.click
-          python.pkgs.pydantic
-          python.pkgs.loguru
-          python.pkgs.questionary
-        ];
+      devShells = forAllSystems (system:
+        let
+          pkgs = nixpkgs.legacyPackages.${system};
+          python = pkgs.python3;
+        in {
+          default = pkgs.mkShell {
+            buildInputs = [
+              python
+              python.pkgs.pip
+              python.pkgs.requests
+              python.pkgs.tqdm
+              python.pkgs.pyyaml
+              python.pkgs.click
+              python.pkgs.pydantic
+              python.pkgs.loguru
+              python.pkgs.questionary
+            ];
 
-        shellHook = ''
-          echo "Neurobik development environment"
-          export PYTHONPATH=$PWD:$PYTHONPATH
-        '';
-      };
+            shellHook = ''
+              echo "Neurobik development environment"
+              export PYTHONPATH=$PWD:$PYTHONPATH
+            '';
+          };
+        }
+      );
     };
 }
