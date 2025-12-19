@@ -14,7 +14,7 @@
         let
           pkgs = nixpkgs.legacyPackages.${system};
           python = pkgs.python3;
-        in {
+        in rec {
           neurobik = python.pkgs.buildPythonPackage {
             pname = "neurobik";
             version = "0.1.0";
@@ -42,7 +42,7 @@
             };
           };
 
-          default = self.packages.${system}.neurobik;
+          default = neurobik;
         }
       );
 
