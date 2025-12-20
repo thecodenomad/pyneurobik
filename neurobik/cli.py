@@ -1,4 +1,5 @@
 import click
+import os
 from neurobik.config import Config
 from neurobik.tui import NeurobikTUI
 from neurobik.downloader import Downloader
@@ -12,7 +13,6 @@ def download(config):
     logger = setup_logging()
     try:
         cfg = Config.from_yaml(config)
-        cfg.validate()
         Downloader.check_podman()
 
         # Prepare items for TUI
@@ -36,13 +36,27 @@ def download(config):
 ╰─┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈─╯\n""")
 
         downloader = Downloader()
+        downloaded_models = []
         for item in selected:
             if item['type'] == 'model':
                 model = next(m for m in cfg.models if m.model_name == item['name'])
                 downloader.pull_model(cfg.model_provider, model.repo_name, model.model_name, model.location, model.confirmation_file)
+                downloaded_models.append(model)
             elif item['type'] == 'oci':
                 oci = next(o for o in cfg.oci if o.image == item['name'])
                 downloader.pull_oci(oci.image, oci.confirmation_file, oci.containerfile, oci.build_args)
+
+        # Create default symlink if any models were downloaded
+        if downloaded_models:
+            first_model = downloaded_models[0]
+            models_dir = os.path.dirname(first_model.confirmation_file)
+            downloader.create_default_symlink(models_dir, first_model.location)
+            print(f"Default model (first in config): {first_model.location}")
+
+        # Create confirmation files after symlinking
+        for model in downloaded_models:
+            from neurobik.utils import create_confirmation_file
+            create_confirmation_file(model.confirmation_file)
 
         print(r"""
 ╭─┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈─╮                

@@ -29,6 +29,7 @@ class Config(BaseModel):
         try:
             config = cls(**data)
             config.expand_vars()
+            config.validate_config()
             return config
         except ValidationError as e:
             raise ValueError(f"Invalid config: {e}")

@@ -9,8 +9,9 @@ A minimal Python CLI with questionary-based interactive prompts for downloading 
 - Download/pull sequential: Use subprocess for Ollama/HF pulls (for models), direct HTTP for files, podman for OCI (pull/build).
 - Validate podman installed; fail gracefully if not.
 - Questionary TUI: Interactive checkbox list for selecting items to download (use questionary.checkbox to avoid complex async UI).
-- Create confirmation files upon success; basic error handling, logging, and fancy ASCII art messages.
-- Overall progress bars, structured logging (e.g., loguru).
+- Support multiple models: Downloads all selected models; creates symlink `default-model.gguf` in models directory (parent of first model's confirmation file) pointing to first model (relative path for portability).
+- Create confirmation files after symlinking; basic error handling, logging, and fancy ASCII art messages.
+- Output default model path on completion; overall progress bars, structured logging (e.g., loguru).
 - Support NixOS integration: flake.nix for packaging, dev.nix for development environment.
 - Include ASCII art in cli.py for fancy headers/footers:
   - Initial runtime header:
@@ -71,9 +72,9 @@ A minimal Python CLI with questionary-based interactive prompts for downloading 
 
 ## Architecture
 - `config.py`: YAML parsing + pydantic validation + provider checks + env var expansion.
-- `downloader.py`: Sequential downloads with tqdm, subprocess for Ollama/HF/podman, directory creation.
+- `downloader.py`: Sequential downloads with tqdm, subprocess for Ollama/HF/podman, directory creation, symlinking logic for default model.
 - `tui.py`: Questionary-based selection prompts (questionary.checkbox for simple interactive selection).
-- `cli.py`: Click CLI launching TUI, with ASCII art headers/footers (include themed boxes and neural art as shown).
+- `cli.py`: Click CLI launching TUI, with ASCII art headers/footers (include themed boxes and neural art as shown), post-download symlinking and confirmation file creation.
 - `utils.py`: Logging, checksum verification, confirmation files.
 - `pyproject.toml`: Python packaging with dependencies.
 - `flake.nix`: Nix flake for building and installing neurobik.
@@ -89,10 +90,10 @@ A minimal Python CLI with questionary-based interactive prompts for downloading 
 - Nix: Standard nixpkgs Python packages.
 
 ## Testing
-- **Unit Tests**: pytest for config validation (invalid YAML, missing fields), checksum verification, confirmation file creation (with mocked subprocess for success/failure), CLI entry points.
-- **Manual Testing**: Test TUI interactions, downloads with sample YAML, podman validation.
-- **Edge Cases**: Network failures, corrupted downloads, missing podman, env var expansion.
-- **Coverage**: Achieved 75% with pytest-cov; includes CLI error handling, TUI mocks, downloader HTTP mocks.
+- **Unit Tests**: pytest for config validation (invalid YAML, missing fields), checksum verification, confirmation file creation (with mocked subprocess for success/failure), symlinking logic (success/failure cases), CLI entry points.
+- **Manual Testing**: Test TUI interactions, downloads with sample YAML, podman validation, multiple model symlinking.
+- **Edge Cases**: Network failures, corrupted downloads, missing podman, env var expansion, symlink removal failures.
+- **Coverage**: Achieved 75% with pytest-cov; includes CLI error handling, TUI mocks, downloader HTTP mocks, symlinking.
 
 ## Nix Integration
 - Use `flake.nix` to build and install neurobik as a system package.

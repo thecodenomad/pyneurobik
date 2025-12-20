@@ -35,12 +35,16 @@ Create a YAML config file with the following structure:
 model_provider: ollama  # or llama.cpp, ramalama
 oci_provider: podman
 
-models:
+models:  # Supports multiple models
   - repo_name: TheBloke/Llama-2-7B-Chat-GGUF
     model_name: llama-2-7b-chat.Q4_K_M.gguf
     location: $HOME/models/llama-2-7b-chat.Q4_K_M.gguf
     confirmation_file: $HOME/models/.llama_downloaded
     checksum: abc123  # optional
+  - repo_name: microsoft/DialoGPT-medium
+    model_name: pytorch_model.bin
+    location: $HOME/models/dialogpt-medium.bin
+    confirmation_file: $HOME/models/.dialogpt_downloaded
 
 oci:
   - image: docker.io/library/alpine:latest
@@ -48,6 +52,8 @@ oci:
     containerfile: /path/to/Containerfile  # optional
     build_args: ["--build-arg=VERSION=latest"]  # optional
 ```
+
+When multiple models are configured and downloaded, Neurobik automatically creates a symlink `default-model.gguf` (or appropriate extension) in the models directory pointing to the first model in the config order. This provides a consistent default model reference.
 
 See `sample_config.yaml` for a complete example.
 
@@ -58,7 +64,13 @@ Run:
 neurobik --config your_config.yaml
 ```
 
-The interactive prompt will show items to select for download.
+The interactive prompt will show items to select for download. After successful downloads, you'll see:
+
+```
+Default model (first in config): /full/path/to/first/model.gguf
+```
+
+This indicates which model is symlinked as `default-model.gguf` in the models directory.
 
 ## Development
 

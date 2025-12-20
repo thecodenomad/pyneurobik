@@ -34,7 +34,7 @@ class Downloader:
         dest_dir = os.path.dirname(location)
         os.makedirs(dest_dir, exist_ok=True)
         subprocess.run(['hf', 'download', repo_name, model_name, '--local-dir', dest_dir], check=True)
-        create_confirmation_file(confirmation_file)
+        # Confirmation file creation moved to after symlinking
 
     def pull_oci(self, image: str, confirmation_file: str, containerfile: Optional[str] = None, build_args: Optional[List[str]] = None):
         os.makedirs(os.path.dirname(confirmation_file), exist_ok=True)
@@ -58,3 +58,22 @@ class Downloader:
     def check_huggingface_cli():
         if not shutil.which('hf'):
             raise RuntimeError("hf CLI not installed. Install with: pip install huggingface_hub")
+
+    @staticmethod
+    def create_default_symlink(models_dir: str, first_model_location: str):
+        """Create a symlink 'default-model.gguf' pointing to the first model."""
+        symlink_path = os.path.join(models_dir, "default-model.gguf")
+        target = os.path.relpath(first_model_location, models_dir)
+
+        # Remove existing symlink if it exists
+        if os.path.lexists(symlink_path):
+            try:
+                os.unlink(symlink_path)
+            except OSError as e:
+                raise RuntimeError(f"Failed to remove existing symlink {symlink_path}: {e}")
+
+        # Create new symlink
+        try:
+            os.symlink(target, symlink_path)
+        except OSError as e:
+            raise RuntimeError(f"Failed to create symlink {symlink_path} -> {target}: {e}")
