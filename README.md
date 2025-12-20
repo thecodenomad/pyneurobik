@@ -27,13 +27,35 @@ Then rebuild: `sudo nixos-rebuild switch`
 pip install -e .
 ```
 
-## Usage
+## Configuration
 
-Create a YAML config file (see `sample_config.yaml`).
+Create a YAML config file with the following structure:
+
+```yaml
+model_provider: ollama  # or llama.cpp, ramalama
+oci_provider: podman
+
+models:
+  - repo_name: TheBloke/Llama-2-7B-Chat-GGUF
+    model_name: llama-2-7b-chat.Q4_K_M.gguf
+    location: $HOME/models/llama-2-7b-chat.Q4_K_M.gguf
+    confirmation_file: $HOME/models/.llama_downloaded
+    checksum: abc123  # optional
+
+oci:
+  - image: docker.io/library/alpine:latest
+    confirmation_file: $HOME/images/.alpine_pulled
+    containerfile: /path/to/Containerfile  # optional
+    build_args: ["--build-arg=VERSION=latest"]  # optional
+```
+
+See `sample_config.yaml` for a complete example.
+
+## Usage
 
 Run:
 ```bash
-neurobik --config sample_config.yaml
+neurobik --config your_config.yaml
 ```
 
 The interactive prompt will show items to select for download.

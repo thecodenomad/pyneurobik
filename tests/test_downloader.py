@@ -12,7 +12,8 @@ def sample_config():
         "oci_provider": "podman",
         "models": [
             {
-                "name": "test/repo/model.gguf",
+                "repo_name": "test/repo",
+                "model_name": "model.gguf",
                 "location": "/tmp/test-model.gguf",
                 "confirmation_file": "/tmp/test-model.confirmed",
                 "checksum": "dummy"
@@ -42,7 +43,7 @@ def test_confirmation_files_created_on_success(mock_subprocess, sample_config):
     
     # Test model pull
     model = cfg.models[0]
-    downloader.pull_model(cfg.model_provider, model.name, model.location, model.confirmation_file)
+    downloader.pull_model(cfg.model_provider, model.repo_name, model.model_name, model.location, model.confirmation_file)
     assert os.path.exists(model.confirmation_file)
     
     # Test OCI pull
@@ -68,7 +69,7 @@ def test_confirmation_files_not_created_on_failure(mock_subprocess, sample_confi
     
     # Test model pull failure
     with pytest.raises(Exception):
-        downloader.pull_model(cfg.model_provider, model.name, model.location, model.confirmation_file)
+        downloader.pull_model(cfg.model_provider, model.repo_name, model.model_name, model.location, model.confirmation_file)
     assert not os.path.exists(model.confirmation_file)
     
     # Test OCI pull failure

@@ -18,7 +18,7 @@ def download(config):
         # Prepare items for TUI
         items = []
         for model in cfg.models:
-            items.append({'name': model.name, 'type': 'model'})
+            items.append({'name': model.model_name, 'type': 'model'})
         for oci in cfg.oci:
             items.append({'name': oci.image, 'type': 'oci'})
 
@@ -38,8 +38,8 @@ def download(config):
         downloader = Downloader()
         for item in selected:
             if item['type'] == 'model':
-                model = next(m for m in cfg.models if m.name == item['name'])
-                downloader.pull_model(cfg.model_provider, model.name, model.location, model.confirmation_file)
+                model = next(m for m in cfg.models if m.model_name == item['name'])
+                downloader.pull_model(cfg.model_provider, model.repo_name, model.model_name, model.location, model.confirmation_file)
             elif item['type'] == 'oci':
                 oci = next(o for o in cfg.oci if o.image == item['name'])
                 downloader.pull_oci(oci.image, oci.confirmation_file, oci.containerfile, oci.build_args)

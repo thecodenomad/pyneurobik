@@ -4,7 +4,7 @@
 A polished Rust CLI with Ratatui TUI for downloading AI models/checkpoints or pulling/building OCI containers from a Nix-generated YAML config. Uses async downloads/pulls with progress; assumes provider formats/names are correct. Includes Nix integration for packaging and development. Features fancy ASCII art headers with themed boxes.
 
 ## Core Requirements
-- Parse and validate YAML config against schema: `{model_provider: "ollama", oci_provider: "podman", models: [{name: "meta-llama/Llama-3-8B", location: "/path", confirmation_file: "/path/.downloaded", checksum: "..."}], oci: [{image: "docker.io/library/alpine:latest", confirmation_file: "/path/.pulled", containerfile?: "/path", build_args?: ["--arg1=value"]}]}` (use serde for validation; expand env vars like $HOME; location optional for OCI since podman pull stores in registry).
+- Parse and validate YAML config against schema: `{model_provider: "ollama", oci_provider: "podman", models: [{repo_name: "meta-llama/Llama-3-8B", model_name: "model-file.gguf", location: "/path", confirmation_file: "/path/.downloaded", checksum: "..."}], oci: [{image: "docker.io/library/alpine:latest", confirmation_file: "/path/.pulled", containerfile?: "/path", build_args?: ["--arg1=value"]}]}` (use serde for validation; expand env vars like $HOME; location optional for OCI since podman pull stores in registry).
 - Validate providers: Basic checks; assume formats are correct.
 - Downloads/pulls: Async/resume (tokio with reqwest streams), progress bars, checksum verification/redownload; tokio::process for podman (pull/build).
 - Validate podman installed; fail gracefully if not.

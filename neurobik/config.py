@@ -4,7 +4,8 @@ import yaml
 import os
 
 class ModelItem(BaseModel):
-    name: str
+    repo_name: str
+    model_name: str
     location: str
     confirmation_file: str
     checksum: Optional[str] = None
@@ -41,7 +42,7 @@ class Config(BaseModel):
         for oci in self.oci:
             oci.confirmation_file = os.path.expandvars(oci.confirmation_file)
 
-    def validate(self):
+    def validate_config(self):
         # Basic checks
         if self.model_provider and self.models:
             if self.model_provider not in ['ollama', 'llama.cpp', 'ramalama']:

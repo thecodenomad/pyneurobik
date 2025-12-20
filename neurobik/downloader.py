@@ -30,15 +30,10 @@ class Downloader:
         create_confirmation_file(dest + '.confirmed')
         print(f"✅ Downloaded {os.path.basename(dest)} successfully!")
 
-    def pull_model(self, provider: str, name: str, location: str, confirmation_file: str):
-        os.makedirs(os.path.dirname(location), exist_ok=True)
-        if '/' not in name:
-            raise ValueError(f"Model name must be in 'repo/filename' format for Hugging Face download, got: {name}")
-        parts = name.split('/')
-        repo = '/'.join(parts[:-1])
-        filename = parts[-1]
+    def pull_model(self, provider: Optional[str], repo_name: str, model_name: str, location: str, confirmation_file: str):
         dest_dir = os.path.dirname(location)
-        subprocess.run(['hf', 'download', repo, filename, '--local-dir', dest_dir], check=True)
+        os.makedirs(dest_dir, exist_ok=True)
+        subprocess.run(['hf', 'download', repo_name, model_name, '--local-dir', dest_dir], check=True)
         create_confirmation_file(confirmation_file)
 
     def pull_oci(self, image: str, confirmation_file: str, containerfile: Optional[str] = None, build_args: Optional[List[str]] = None):
