@@ -50,3 +50,11 @@ class Config(BaseModel):
                 raise ValueError(f"Unsupported model_provider: {self.model_provider}")
         if self.oci and self.oci_provider != 'podman':
             raise ValueError("Only podman supported for OCI")
+
+    @property
+    def provider_confirmation_file(self):
+        """Get the provider confirmation file path."""
+        if not self.models:
+            return None
+        provider_dir = os.path.dirname(self.models[0].confirmation_file)
+        return os.path.join(provider_dir, '.neurobik-ready')

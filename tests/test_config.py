@@ -192,3 +192,41 @@ def test_schema_validation_edge_cases():
     cfg = Config(model_provider='ollama', oci_provider='invalid', models=[], oci=[OciItem(image="test", confirmation_file="/tmp")])
     with pytest.raises(ValueError, match="Only podman supported"):
         cfg.validate_config()
+
+
+def test_provider_confirmation_file():
+    """
+    Test the provider_confirmation_file property.
+
+    Replication steps (Python/pytest):
+    1. Create Config with models having confirmation_file in same directory
+    2. Access provider_confirmation_file property
+    3. Assert it returns the expected path (.neurobik-ready in the directory)
+    4. Test with no models returns None
+
+    Key validations:
+    - Property returns correct path when models exist
+    - Returns None when no models
+    - Path is in the same directory as model confirmation files
+
+    For other languages:
+    - Test computed properties or getters
+    - Validate path construction logic
+    - Test null/empty cases
+    """
+    from neurobik.config import ModelItem
+
+    # Test with models
+    cfg = Config(
+        model_provider='ramalama',
+        models=[
+            ModelItem(repo_name="test/repo1", model_name="model1.gguf", location="/tmp/model1", confirmation_file="/tmp/models/.neurobik-ready-model1"),
+            ModelItem(repo_name="test/repo2", model_name="model2.gguf", location="/tmp/model2", confirmation_file="/tmp/models/.neurobik-ready-model2")
+        ],
+        oci=[]
+    )
+    assert cfg.provider_confirmation_file == "/tmp/models/.neurobik-ready"
+
+    # Test with no models
+    cfg_empty = Config(model_provider=None, models=[], oci=[])
+    assert cfg_empty.provider_confirmation_file is None

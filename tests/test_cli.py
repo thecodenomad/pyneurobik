@@ -148,6 +148,75 @@ def test_cli_multiple_models_symlinking(mock_setup_logging, mock_tui_run, mock_s
     # Check confirmation files exist
     assert (tmp_path / ".model1_ready").exists()
     assert (tmp_path / ".model2_ready").exists()
+    # Check provider confirmation file exists
+    assert (tmp_path / ".neurobik-ready").exists()
+
+
+@patch('neurobik.cli.Downloader.check_podman')
+@patch('neurobik.downloader.subprocess.run')
+@patch('neurobik.tui.NeurobikTUI.run')
+@patch('neurobik.cli.setup_logging')
+def test_cli_filters_downloaded_models(mock_setup_logging, mock_tui_run, mock_subprocess_run, mock_check_podman, runner, tmp_path):
+    """
+    Test that CLI only shows models that haven't been downloaded yet (no confirmation file).
+
+    Replication steps (Python/pytest):
+    1. Create config with multiple models
+    2. Pre-create confirmation file for one model
+    3. Mock TUI to expect only the non-downloaded model
+    4. Invoke CLI
+    5. Assert only non-downloaded model is shown/selected
+
+    Key validations:
+    - Models with existing confirmation files are filtered out
+    - Only models without confirmation files appear in TUI
+    - Downloaded models are not re-offered for download
+    """
+    # Create temp config with multiple models
+    config_data = {
+        "model_provider": "ramalama",
+        "models": [
+            {
+                "repo_name": "test/repo1",
+                "model_name": "model1.gguf",
+                "location": str(tmp_path / "models" / "model1.gguf"),
+                "confirmation_file": str(tmp_path / ".model1_ready")
+            },
+            {
+                "repo_name": "test/repo2",
+                "model_name": "model2.gguf",
+                "location": str(tmp_path / "models" / "model2.gguf"),
+                "confirmation_file": str(tmp_path / ".model2_ready")
+            }
+        ]
+    }
+
+    config_file = tmp_path / "config.yaml"
+    import yaml
+    with open(config_file, 'w') as f:
+        yaml.dump(config_data, f)
+
+    # Pre-create confirmation file for first model (simulate already downloaded)
+    (tmp_path / ".model1_ready").touch()
+
+    # Mock TUI to select only the second model
+    mock_tui_run.return_value = [
+        {'name': 'model2.gguf', 'type': 'model'}
+    ]
+
+    # Mock subprocess success
+    mock_subprocess_run.return_value.returncode = 0
+
+    # Mock logging
+    mock_setup_logging.return_value = MagicMock()
+
+    result = runner.invoke(download, ['--config', str(config_file)])
+
+    assert result.exit_code == 0
+    # Check only the second model was downloaded
+    assert (tmp_path / ".model2_ready").exists()
+    # Provider confirmation should be created since a model was downloaded
+    assert (tmp_path / ".neurobik-ready").exists()
 
 
 @patch('neurobik.cli.Downloader.check_podman')

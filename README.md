@@ -32,14 +32,14 @@ pip install -e .
 Create a YAML config file with the following structure:
 
 ```yaml
-model_provider: ollama  # or llama.cpp, ramalama
+model_provider: ramalama  # or ollama, llama.cpp
 oci_provider: podman
 
-models:  # Supports multiple models
-  - repo_name: TheBloke/Llama-2-7B-Chat-GGUF
-    model_name: llama-2-7b-chat.Q4_K_M.gguf
-    location: $HOME/models/llama-2-7b-chat.Q4_K_M.gguf
-    confirmation_file: $HOME/models/.llama_downloaded
+models:  # Supports multiple models, each with individual confirmation files
+  - repo_name: unsloth/Qwen3-0.6B-GGUF
+    model_name: Qwen3-0.6B-Q6_K.gguf
+    location: $HOME/.local/share/ubikos-services/ramalama/models/unsloth/Qwen3-0.6B-GGUF/Qwen3-0.6B-Q6_K.gguf
+    confirmation_file: $HOME/.local/share/ubikos-services/ramalama/.neurobik-ready-qwen
     checksum: abc123  # optional
   - repo_name: microsoft/DialoGPT-medium
     model_name: pytorch_model.bin
@@ -55,6 +55,8 @@ oci:
 
 When multiple models are configured and downloaded, Neurobik automatically creates a symlink `default-model.gguf` (or appropriate extension) in the models directory pointing to the first model in the config order. This provides a consistent default model reference.
 
+Each model has its own confirmation file. When any model is downloaded for a provider, a provider confirmation file (`.neurobik-ready`) is also created in the models directory.
+
 See `sample_config.yaml` for a complete example.
 
 ## Usage
@@ -64,13 +66,13 @@ Run:
 neurobik --config your_config.yaml
 ```
 
-The interactive prompt will show items to select for download. After successful downloads, you'll see:
+The interactive prompt will show only models that haven't been downloaded yet (based on confirmation file existence), along with all configured OCI images. Select items to download. After successful downloads, you'll see:
 
 ```
 Default model (first in config): /full/path/to/first/model.gguf
 ```
 
-This indicates which model is symlinked as `default-model.gguf` in the models directory.
+This indicates which model is symlinked as `default-model.gguf` in the models directory. A provider confirmation file (`.neurobik-ready`) is created when any model is downloaded.
 
 ## Development
 

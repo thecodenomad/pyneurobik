@@ -15,10 +15,11 @@ def download(config):
         cfg = Config.from_yaml(config)
         Downloader.check_podman()
 
-        # Prepare items for TUI
+        # Prepare items for TUI - only show models that haven't been downloaded yet
         items = []
         for model in cfg.models:
-            items.append({'name': model.model_name, 'type': 'model'})
+            if not os.path.exists(model.confirmation_file):
+                items.append({'name': model.model_name, 'type': 'model'})
         for oci in cfg.oci:
             items.append({'name': oci.image, 'type': 'oci'})
 
@@ -54,9 +55,13 @@ def download(config):
             print(f"Default model (first in config): {first_model.location}")
 
         # Create confirmation files after symlinking
+        from neurobik.utils import create_confirmation_file
         for model in downloaded_models:
-            from neurobik.utils import create_confirmation_file
             create_confirmation_file(model.confirmation_file)
+
+        # Create provider confirmation file if any models were downloaded
+        if downloaded_models and cfg.provider_confirmation_file:
+            create_confirmation_file(cfg.provider_confirmation_file)
 
         print(r"""
 ╭─┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈─╮                
