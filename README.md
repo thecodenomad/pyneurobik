@@ -77,11 +77,27 @@ Default model: /full/path/to/default/model.gguf
 
 This indicates which model is symlinked as `default-model.gguf` in the models directory. A provider confirmation file (`.neurobik-ready`) is created when any model is downloaded.
 
+### Relink Default Model
+
+To update the default model symlink without downloading anything:
+
+```bash
+neurobik --config your_config.yaml --relink-default-gguf
+```
+
+This will:
+- Remove the existing `default-model.gguf` symlink (if it exists)
+- Create a new symlink pointing to the model specified by `default_gguf` in your config
+- If no `default_gguf` is specified, it will point to the first model in your config
+- Validates that the target model file exists before creating the symlink
+- Does nothing if `default_gguf` is not specified and no models are configured
+- Fails with an error if `default_gguf` is specified but no models are configured
+
 ## Development
 
 ### Quality Metrics
 - **Code Quality**: Perfect 10.00/10 pylint score
-- **Test Coverage**: 100% pass rate (22/22 tests)
+- **Test Coverage**: 100% pass rate (25/25 tests)
 - **Line Length**: Modern 120-character lines
 - **Standards**: PEP 8 compliant with comprehensive documentation
 

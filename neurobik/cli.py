@@ -46,17 +46,50 @@ def _download_oci(cfg, downloader, item):
     downloader.pull_oci(oci.image, oci.confirmation_file, oci.containerfile, oci.build_args)
 
 
+def _relink_default_model(cfg):
+    """Update the default GGUF model symlink based on config.
+
+    Args:
+        cfg: Configuration object
+    """
+    if not cfg.models:
+        if cfg.default_gguf:
+            raise ValueError(f"Default GGUF model '{cfg.default_gguf}' specified but no models configured.")
+        return
+
+    # Find the default model (same logic as in download)
+    default_model = next(
+        (m for m in cfg.models if m.model_name == cfg.default_gguf),
+        cfg.models[0]  # first in config if no default_gguf
+    )
+
+    # Validate that the target model file exists
+    if not os.path.exists(default_model.location):
+        raise ValueError(f"Default model file does not exist: {default_model.location}")
+
+    models_dir = os.path.dirname(default_model.confirmation_file)
+    downloader = Downloader()
+    downloader.create_default_symlink(models_dir, default_model.location)
+    click.echo(f"Default model relinked: {default_model.location}")
+
+
 @click.command()
 @click.option("--config", required=True, help="Path to YAML config file")
-def download(config):
-    """Download models and OCI images based on config.
+@click.option("--relink-default-gguf", is_flag=True, help="Update default GGUF symlink based on config")
+def download(config, relink_default_gguf):
+    """Download models and OCI images based on config, or relink default model.
 
     Args:
         config: Path to YAML configuration file containing model and OCI definitions
+        relink_default_gguf: If True, only update the default GGUF model symlink without downloading
     """
     logger = setup_logging()
     try:
         cfg = Config.from_yaml(config)
+        if relink_default_gguf:
+            # Only relink, no downloading
+            _relink_default_model(cfg)
+            return
         Downloader.check_podman()
 
         # Prepare items for TUI - only show models that haven't been downloaded yet

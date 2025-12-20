@@ -10,7 +10,7 @@ A polished Rust CLI with Ratatui TUI for downloading AI models/checkpoints or pu
 - Validate providers: Basic checks; assume formats are correct.
 - Downloads/pulls: Async/resume (tokio with reqwest streams), progress bars, checksum verification/redownload; tokio::process for podman (pull/build).
 - Validate podman installed; fail gracefully if not.
-- TUI: Ratatui for interactive checkboxes/menus with async updates (use ratatui widgets for simple selection). Only shows models that haven't been downloaded yet (no confirmation file exists); OCI items always shown. Creates default symlink based on default_gguf configuration.
+- TUI: Ratatui for interactive checkboxes/menus with async updates (use ratatui widgets for simple selection). Only shows models that haven't been downloaded yet (no confirmation file exists); OCI items always shown. Creates default symlink based on default_gguf configuration. Includes `--relink-default-gguf` option for updating symlinks without downloads (available in Python prototype).
 - Create confirmation files upon success; each model has its own confirmation file; a provider confirmation file (.neurobik-ready in the models directory) is created when any model is downloaded. Robust error handling, retries, tracing logging, and fancy ASCII art messages.
 - Support NixOS integration: flake.nix for packaging, dev.nix for development environment.
 - Include ASCII art in main.rs for fancy headers/footers (same as MVP: initial runtime header, downloads starting box, completion with neural art and themed box).

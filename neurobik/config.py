@@ -92,8 +92,8 @@ class Config(BaseModel):
                 raise ValueError(f"Unsupported model_provider: {self.model_provider}")
         if self.oci and self.oci_provider != "podman":
             raise ValueError("Only podman supported for OCI")
-        # Validate default_gguf
-        if self.default_gguf:
+        # Validate default_gguf only if models are configured
+        if self.default_gguf and self.models:
             model_names = [model.model_name for model in self.models]
             if self.default_gguf not in model_names:
                 raise ValueError(f"default_gguf '{self.default_gguf}' not found in configured models")

@@ -445,3 +445,234 @@ def test_cli_symlink_removal_failure(
 
     assert result.exit_code == 1
     assert "Failed to remove existing symlink" in result.output
+
+
+@patch("neurobik.cli.Downloader.check_podman")
+@patch("neurobik.downloader.subprocess.run")
+@patch("neurobik.tui.NeurobikTUI.run")
+@patch("neurobik.cli.setup_logging")
+def test_cli_relink_default_gguf(mock_setup_logging, mock_tui_run, mock_subprocess_run, mock_check_podman, runner, tmp_path):
+    """
+    Test CLI --relink-default-gguf option updates symlink without downloading.
+
+    Replication steps (Python/pytest):
+    1. Create config with multiple models and default_gguf set
+    2. Pre-create model files to simulate existing downloads
+    3. Invoke CLI with --relink-default-gguf flag
+    4. Assert symlink is created/updated correctly
+    5. Assert no download operations occurred
+
+    Key validations:
+    - --relink-default-gguf skips download/TUI logic
+    - No podman checks, subprocess calls, or TUI interactions occur
+    - Symlink points to the default_gguf model
+    - Validation fails if target model doesn't exist
+    - Output shows correct relinked model
+    """
+    config_data = {
+        "model_provider": "ramalama",
+        "default_gguf": "model2.gguf",
+        "models": [
+            {
+                "repo_name": "test/repo1",
+                "model_name": "model1.gguf",
+                "location": str(tmp_path / "models" / "model1.gguf"),
+                "confirmation_file": str(tmp_path / ".model1_ready"),
+            },
+            {
+                "repo_name": "test/repo2",
+                "model_name": "model2.gguf",
+                "location": str(tmp_path / "models" / "model2.gguf"),
+                "confirmation_file": str(tmp_path / ".model2_ready"),
+            },
+        ],
+    }
+
+    config_file = tmp_path / "config.yaml"
+    with open(config_file, "w", encoding="utf-8") as f:
+        yaml.dump(config_data, f)
+
+    # Pre-create the model files (simulate existing downloads)
+    (tmp_path / "models").mkdir()
+    (tmp_path / "models" / "model1.gguf").touch()
+    (tmp_path / "models" / "model2.gguf").touch()
+
+    mock_setup_logging.return_value = MagicMock()
+
+    result = runner.invoke(download, ["--config", str(config_file), "--relink-default-gguf"])
+
+    assert result.exit_code == 0
+    assert "Default model relinked:" in result.output
+    assert str(tmp_path / "models" / "model2.gguf") in result.output
+
+    # Check symlink exists and points to model2
+    symlink_path = tmp_path / "default-model.gguf"
+    assert symlink_path.exists()
+    assert symlink_path.is_symlink()
+    assert os.readlink(str(symlink_path)) == "models/model2.gguf"
+
+    # Assert no download operations occurred
+    mock_check_podman.assert_not_called()
+    mock_subprocess_run.assert_not_called()
+    mock_tui_run.assert_not_called()
+
+
+@patch("neurobik.cli.Downloader.check_podman")
+@patch("neurobik.downloader.subprocess.run")
+@patch("neurobik.tui.NeurobikTUI.run")
+@patch("neurobik.cli.setup_logging")
+def test_cli_relink_default_gguf_no_default(mock_setup_logging, mock_tui_run, mock_subprocess_run, mock_check_podman, runner, tmp_path):
+    """
+    Test CLI --relink-default-gguf uses first model when no default_gguf specified.
+    """
+    config_data = {
+        "model_provider": "ramalama",
+        "models": [
+            {
+                "repo_name": "test/repo1",
+                "model_name": "model1.gguf",
+                "location": str(tmp_path / "models" / "model1.gguf"),
+                "confirmation_file": str(tmp_path / ".model1_ready"),
+            },
+            {
+                "repo_name": "test/repo2",
+                "model_name": "model2.gguf",
+                "location": str(tmp_path / "models" / "model2.gguf"),
+                "confirmation_file": str(tmp_path / ".model2_ready"),
+            },
+        ],
+    }
+
+    config_file = tmp_path / "config.yaml"
+    with open(config_file, "w", encoding="utf-8") as f:
+        yaml.dump(config_data, f)
+
+    # Pre-create the model files
+    (tmp_path / "models").mkdir()
+    (tmp_path / "models" / "model1.gguf").touch()
+    (tmp_path / "models" / "model2.gguf").touch()
+
+    mock_setup_logging.return_value = MagicMock()
+
+    result = runner.invoke(download, ["--config", str(config_file), "--relink-default-gguf"])
+
+    assert result.exit_code == 0
+    assert "Default model relinked:" in result.output
+    assert str(tmp_path / "models" / "model1.gguf") in result.output  # First model
+
+    # Check symlink points to model1
+    symlink_path = tmp_path / "default-model.gguf"
+    assert os.readlink(str(symlink_path)) == "models/model1.gguf"
+
+    # Assert no download operations occurred
+    mock_check_podman.assert_not_called()
+    mock_subprocess_run.assert_not_called()
+    mock_tui_run.assert_not_called()
+
+
+@patch("neurobik.cli.Downloader.check_podman")
+@patch("neurobik.downloader.subprocess.run")
+@patch("neurobik.tui.NeurobikTUI.run")
+@patch("neurobik.cli.setup_logging")
+def test_cli_relink_default_gguf_missing_model(mock_setup_logging, mock_tui_run, mock_subprocess_run, mock_check_podman, runner, tmp_path):
+    """
+    Test CLI --relink-default-gguf fails when target model file doesn't exist.
+    """
+    config_data = {
+        "model_provider": "ramalama",
+        "default_gguf": "model2.gguf",
+        "models": [
+            {
+                "repo_name": "test/repo1",
+                "model_name": "model1.gguf",
+                "location": str(tmp_path / "models" / "model1.gguf"),
+                "confirmation_file": str(tmp_path / ".model1_ready"),
+            },
+            {
+                "repo_name": "test/repo2",
+                "model_name": "model2.gguf",
+                "location": str(tmp_path / "models" / "model2.gguf"),
+                "confirmation_file": str(tmp_path / ".model2_ready"),
+            },
+        ],
+    }
+
+    config_file = tmp_path / "config.yaml"
+    with open(config_file, "w", encoding="utf-8") as f:
+        yaml.dump(config_data, f)
+
+    # Don't create model files - they should be missing
+
+    mock_setup_logging.return_value = MagicMock()
+
+    result = runner.invoke(download, ["--config", str(config_file), "--relink-default-gguf"])
+
+    assert result.exit_code == 1
+    assert "Default model file does not exist:" in result.output
+
+    # Assert no download operations occurred (validation happens first)
+    mock_check_podman.assert_not_called()
+    mock_subprocess_run.assert_not_called()
+    mock_tui_run.assert_not_called()
+
+
+@patch("neurobik.cli.Downloader.check_podman")
+@patch("neurobik.downloader.subprocess.run")
+@patch("neurobik.tui.NeurobikTUI.run")
+@patch("neurobik.cli.setup_logging")
+def test_cli_relink_default_gguf_default_specified_no_models(mock_setup_logging, mock_tui_run, mock_subprocess_run, mock_check_podman, runner, tmp_path):
+    """
+    Test CLI --relink-default-gguf fails when default_gguf is specified but no models exist.
+    """
+    config_data = {
+        "model_provider": "ramalama",
+        "default_gguf": "nonexistent-model.gguf",
+        "models": [],  # Empty models list
+    }
+
+    config_file = tmp_path / "config.yaml"
+    with open(config_file, "w", encoding="utf-8") as f:
+        yaml.dump(config_data, f)
+
+    mock_setup_logging.return_value = MagicMock()
+
+    result = runner.invoke(download, ["--config", str(config_file), "--relink-default-gguf"])
+
+    assert result.exit_code == 1
+    assert "Default GGUF model 'nonexistent-model.gguf' specified but no models configured." in result.output
+
+    # Assert no download operations occurred
+    mock_check_podman.assert_not_called()
+    mock_subprocess_run.assert_not_called()
+    mock_tui_run.assert_not_called()
+
+
+@patch("neurobik.cli.Downloader.check_podman")
+@patch("neurobik.downloader.subprocess.run")
+@patch("neurobik.tui.NeurobikTUI.run")
+@patch("neurobik.cli.setup_logging")
+def test_cli_relink_default_gguf_no_default_no_models(mock_setup_logging, mock_tui_run, mock_subprocess_run, mock_check_podman, runner, tmp_path):
+    """
+    Test CLI --relink-default-gguf does nothing when no default_gguf and no models exist.
+    """
+    config_data = {
+        "model_provider": "ramalama",
+        # No default_gguf specified
+        "models": [],  # Empty models list
+    }
+
+    config_file = tmp_path / "config.yaml"
+    with open(config_file, "w", encoding="utf-8") as f:
+        yaml.dump(config_data, f)
+
+    mock_setup_logging.return_value = MagicMock()
+
+    result = runner.invoke(download, ["--config", str(config_file), "--relink-default-gguf"])
+
+    assert result.exit_code == 0
+    # Should not output anything for this case
+
+    # Assert no download operations occurred
+    mock_check_podman.assert_not_called()
+    mock_subprocess_run.assert_not_called()
+    mock_tui_run.assert_not_called()

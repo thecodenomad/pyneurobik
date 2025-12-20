@@ -10,6 +10,7 @@ A minimal Python CLI with questionary-based interactive prompts for downloading 
 - Validate podman installed; fail gracefully if not.
 - Questionary TUI: Interactive checkbox list for selecting items to download (use questionary.checkbox to avoid complex async UI). Only shows models that haven't been downloaded yet (no confirmation file exists); OCI items always shown.
 - Support multiple models: Downloads all selected models; creates symlink `default-model.gguf` in models directory (parent of default model's confirmation file) pointing to the specified default_gguf model or first model if not specified (relative path for portability). Each model has its own confirmation file; a provider confirmation file (.neurobik-ready in the models directory) is created when any model is downloaded.
+- **Relink Option**: `--relink-default-gguf` flag updates the default GGUF symlink based on current config without downloading anything. Validates that target model exists; fails if `default_gguf` is specified but no models are configured; does nothing if neither `default_gguf` nor models are configured.
 - Create confirmation files after symlinking; basic error handling, logging, and fancy ASCII art messages.
 - Output default model path on completion; overall progress bars, structured logging (e.g., loguru).
 - Support NixOS integration: flake.nix for packaging, dev.nix for development environment.
@@ -74,7 +75,7 @@ A minimal Python CLI with questionary-based interactive prompts for downloading 
 - `config.py`: YAML parsing + pydantic validation + provider checks + env var expansion + provider confirmation file derivation.
 - `downloader.py`: Sequential downloads with tqdm, subprocess for Ollama/HF/podman, directory creation, symlinking logic for default model.
 - `tui.py`: Questionary-based selection prompts (questionary.checkbox for simple interactive selection).
-- `cli.py`: Click CLI launching TUI (filters models by confirmation file existence), with ASCII art headers/footers (include themed boxes and neural art as shown), post-download symlinking and confirmation file creation (per-model and provider).
+- `cli.py`: Click CLI launching TUI (filters models by confirmation file existence) or relink operation (`--relink-default-gguf`), with ASCII art headers/footers (include themed boxes and neural art as shown), post-download symlinking and confirmation file creation (per-model and provider).
 - `utils.py`: Logging, checksum verification, confirmation files.
 - `pyproject.toml`: Python packaging with dependencies.
 - `flake.nix`: Nix flake for building and installing neurobik.
@@ -95,7 +96,7 @@ A minimal Python CLI with questionary-based interactive prompts for downloading 
 - **Unit Tests**: pytest for config validation (invalid YAML, missing fields, default_gguf validation), provider confirmation file derivation, checksum verification, confirmation file creation (with mocked subprocess for success/failure), symlinking logic (success/failure cases), CLI entry points, model filtering by confirmation files.
 - **Manual Testing**: Test TUI interactions, downloads with sample YAML, podman validation, multiple model symlinking with default_gguf, filtering of downloaded models.
 - **Edge Cases**: Network failures, corrupted downloads, missing podman, env var expansion, symlink removal failures, provider confirmation file creation, invalid default_gguf values.
-- **Coverage**: Achieved 100% test pass rate (22/22 tests); includes CLI error handling, TUI mocks, downloader HTTP mocks, symlinking, confirmation file filtering, default_gguf validation.
+- **Coverage**: Achieved 100% test pass rate (25/25 tests); includes CLI error handling, TUI mocks, downloader HTTP mocks, symlinking, confirmation file filtering, default_gguf validation, and relink functionality with comprehensive edge case testing.
 
 ## Nix Integration
 - Use `flake.nix` to build and install neurobik as a system package.
