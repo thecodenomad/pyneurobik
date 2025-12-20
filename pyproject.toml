@@ -23,8 +23,24 @@ dependencies = [
     "huggingface_hub[cli]>=0.17.0",
 ]
 
+[project.optional-dependencies]
+dev = [
+    "black>=23.0.0",
+    "pylint>=3.0.0",
+    "pytest>=7.0.0",
+]
+
 [project.scripts]
 neurobik = "neurobik.cli:download"
 
 [tool.hatch.build.targets.wheel]
 packages = ["neurobik"]
+
+[tool.black]
+line-length = 120
+
+[tool.pylint.main]
+max-line-length = 120
+
+[tool.pylint.master]
+extension-pkg-allow-list = ["pydantic"]

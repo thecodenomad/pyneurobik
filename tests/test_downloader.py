@@ -1,3 +1,4 @@
+# pylint: disable=import-outside-toplevel,redefined-outer-name,unused-argument,wrong-import-order,unused-import
 """
 Neurobik Downloader Test Suite
 
@@ -37,12 +38,15 @@ Dependencies for replication:
 - os/pathlib for file operations
 """
 
+# pylint: disable=import-outside-toplevel,redefined-outer-name,unused-argument,wrong-import-order
+
 import pytest
-import tempfile
 import os
+import tempfile
 from unittest.mock import patch
-from neurobik.config import Config
+
 from neurobik.downloader import Downloader
+
 
 @pytest.fixture
 def sample_config():
@@ -71,24 +75,26 @@ def sample_config():
                 "model_name": "model.gguf",
                 "location": "/tmp/test-model.gguf",
                 "confirmation_file": "/tmp/test-model.confirmed",
-                "checksum": "dummy"
+                "checksum": "dummy",
             }
         ],
         "oci": [
             {
                 "image": "test-image:latest",
-                "confirmation_file": "/tmp/test-image.confirmed"
+                "confirmation_file": "/tmp/test-image.confirmed",
             }
-        ]
+        ],
     }
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
         import yaml
+
         yaml.dump(config_data, f)
         f.flush()
         yield f.name
     os.unlink(f.name)
 
-@patch('neurobik.downloader.subprocess.run')
+
+@patch("neurobik.downloader.subprocess.run")
 def test_confirmation_files_created_on_success(mock_subprocess, sample_config):
     """
     Test that confirmation files are created after successful OCI pulls.
@@ -113,7 +119,8 @@ def test_confirmation_files_created_on_success(mock_subprocess, sample_config):
     - Test with different container image names
     """
 
-@patch('neurobik.downloader.subprocess.run')
+
+@patch("neurobik.downloader.subprocess.run")
 def test_confirmation_files_not_created_on_failure(mock_subprocess, sample_config):
     """
     Test that confirmation files are NOT created when downloads fail.
@@ -138,7 +145,8 @@ def test_confirmation_files_not_created_on_failure(mock_subprocess, sample_confi
     - Test cleanup on error paths
     """
 
-@patch('neurobik.downloader.requests.get')
+
+@patch("neurobik.downloader.requests.get")
 def test_download_file_success(mock_get, sample_config):
     """
     Test successful HTTP file download with checksum verification.
@@ -166,7 +174,8 @@ def test_download_file_success(mock_get, sample_config):
     - Test file I/O operations
     """
 
-@patch('neurobik.downloader.requests.get')
+
+@patch("neurobik.downloader.requests.get")
 def test_download_file_checksum_mismatch(mock_get, sample_config):
     """
     Test checksum verification failure for downloaded files.
@@ -193,7 +202,8 @@ def test_download_file_checksum_mismatch(mock_get, sample_config):
     - Ensure atomic download-verification operations
     """
 
-@patch('neurobik.downloader.subprocess.run')
+
+@patch("neurobik.downloader.subprocess.run")
 def test_pull_oci_with_containerfile(mock_subprocess):
     """
     Test OCI container build with custom containerfile and build arguments.

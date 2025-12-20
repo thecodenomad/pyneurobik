@@ -1,3 +1,4 @@
+# pylint: disable=import-outside-toplevel,redefined-outer-name,unused-argument,wrong-import-order,too-many-arguments,too-many-positional-arguments
 """
 Neurobik CLI Test Suite
 
@@ -38,19 +39,25 @@ Dependencies for replication:
 - yaml for config generation
 """
 
-import pytest
+# pylint: disable=import-outside-toplevel,redefined-outer-name,unused-argument,wrong-import-order
+
 import os
-import tempfile
 from unittest.mock import patch, MagicMock
-from neurobik.cli import download
-from neurobik.config import Config
+
+import pytest
+import yaml
 from click.testing import CliRunner
+
+from neurobik.cli import download
+
 
 @pytest.fixture
 def runner():
+    """CliRunner fixture for testing click commands."""
     return CliRunner()
 
-@patch('neurobik.cli.Config.from_yaml')
+
+@patch("neurobik.cli.Config.from_yaml")
 def test_cli_invalid_config(mock_config_from_yaml, runner):
     """
     Test CLI behavior with invalid YAML configuration.
@@ -64,16 +71,23 @@ def test_cli_invalid_config(mock_config_from_yaml, runner):
     """
     mock_config_from_yaml.side_effect = ValueError("Invalid config")
 
-    result = runner.invoke(download, ['--config', 'test.yaml'])
+    result = runner.invoke(download, ["--config", "test.yaml"])
     assert result.exit_code == 1
     assert "Error: Invalid config" in result.output
 
 
-@patch('neurobik.cli.Downloader.check_podman')
-@patch('neurobik.downloader.subprocess.run')
-@patch('neurobik.tui.NeurobikTUI.run')
-@patch('neurobik.cli.setup_logging')
-def test_cli_multiple_models_symlinking(mock_setup_logging, mock_tui_run, mock_subprocess_run, mock_check_podman, runner, tmp_path):
+@patch("neurobik.cli.Downloader.check_podman")
+@patch("neurobik.downloader.subprocess.run")
+@patch("neurobik.tui.NeurobikTUI.run")
+@patch("neurobik.cli.setup_logging")
+def test_cli_multiple_models_symlinking(
+    mock_setup_logging,
+    mock_tui_run,
+    mock_subprocess_run,
+    mock_check_podman,
+    runner,
+    tmp_path,
+):
     """
     Test multiple model downloads with automatic symlinking to default-model.gguf.
 
@@ -109,26 +123,25 @@ def test_cli_multiple_models_symlinking(mock_setup_logging, mock_tui_run, mock_s
                 "repo_name": "test/repo1",
                 "model_name": "model1.gguf",
                 "location": str(tmp_path / "models" / "model1.gguf"),
-                "confirmation_file": str(tmp_path / ".model1_ready")
+                "confirmation_file": str(tmp_path / ".model1_ready"),
             },
             {
                 "repo_name": "test/repo2",
                 "model_name": "model2.gguf",
                 "location": str(tmp_path / "models" / "model2.gguf"),
-                "confirmation_file": str(tmp_path / ".model2_ready")
-            }
-        ]
+                "confirmation_file": str(tmp_path / ".model2_ready"),
+            },
+        ],
     }
 
     config_file = tmp_path / "config.yaml"
-    import yaml
-    with open(config_file, 'w') as f:
+    with open(config_file, "w", encoding="utf-8") as f:
         yaml.dump(config_data, f)
 
     # Mock TUI to select both models
     mock_tui_run.return_value = [
-        {'name': 'model1.gguf', 'type': 'model'},
-        {'name': 'model2.gguf', 'type': 'model'}
+        {"name": "model1.gguf", "type": "model"},
+        {"name": "model2.gguf", "type": "model"},
     ]
 
     # Mock subprocess success
@@ -137,10 +150,10 @@ def test_cli_multiple_models_symlinking(mock_setup_logging, mock_tui_run, mock_s
     # Mock logging
     mock_setup_logging.return_value = MagicMock()
 
-    result = runner.invoke(download, ['--config', str(config_file)])
+    result = runner.invoke(download, ["--config", str(config_file)])
 
     assert result.exit_code == 0
-    assert "Default model (first in config):" in result.output
+    assert "Default model:" in result.output
     assert str(tmp_path / "models" / "model1.gguf") in result.output
 
     # Note: Symlink creation is tested in unit tests; here we verify the CLI flow
@@ -152,11 +165,83 @@ def test_cli_multiple_models_symlinking(mock_setup_logging, mock_tui_run, mock_s
     assert (tmp_path / ".neurobik-ready").exists()
 
 
-@patch('neurobik.cli.Downloader.check_podman')
-@patch('neurobik.downloader.subprocess.run')
-@patch('neurobik.tui.NeurobikTUI.run')
-@patch('neurobik.cli.setup_logging')
-def test_cli_filters_downloaded_models(mock_setup_logging, mock_tui_run, mock_subprocess_run, mock_check_podman, runner, tmp_path):
+@patch("neurobik.cli.Downloader.check_podman")
+@patch("neurobik.downloader.subprocess.run")
+@patch("neurobik.tui.NeurobikTUI.run")
+@patch("neurobik.cli.setup_logging")
+def test_cli_default_gguf_specified(
+    mock_setup_logging,
+    mock_tui_run,
+    mock_subprocess_run,
+    mock_check_podman,
+    runner,
+    tmp_path,
+):
+    """
+    Test CLI behavior when default_gguf is specified - should symlink to specified model.
+
+    Replication steps (Python/pytest):
+    1. Create config with multiple models and default_gguf set to second model
+    2. Mock TUI to select both models
+    3. Mock subprocess for downloads
+    4. Invoke CLI
+    5. Assert symlink points to the default_gguf model, not first
+
+    Key validations:
+    - When default_gguf is set, symlink targets that model
+    - Output shows correct default model path
+    """
+    config_data = {
+        "model_provider": "ramalama",
+        "default_gguf": "model2.gguf",
+        "models": [
+            {
+                "repo_name": "test/repo1",
+                "model_name": "model1.gguf",
+                "location": str(tmp_path / "models" / "model1.gguf"),
+                "confirmation_file": str(tmp_path / ".model1_ready"),
+            },
+            {
+                "repo_name": "test/repo2",
+                "model_name": "model2.gguf",
+                "location": str(tmp_path / "models" / "model2.gguf"),
+                "confirmation_file": str(tmp_path / ".model2_ready"),
+            },
+        ],
+    }
+
+    config_file = tmp_path / "config.yaml"
+    with open(config_file, "w", encoding="utf-8") as f:
+        yaml.dump(config_data, f)
+
+    # Mock TUI to select both models
+    mock_tui_run.return_value = [
+        {"name": "model1.gguf", "type": "model"},
+        {"name": "model2.gguf", "type": "model"},
+    ]
+
+    mock_subprocess_run.return_value.returncode = 0
+    mock_setup_logging.return_value = MagicMock()
+
+    result = runner.invoke(download, ["--config", str(config_file)])
+
+    assert result.exit_code == 0
+    assert "Default model:" in result.output
+    assert str(tmp_path / "models" / "model2.gguf") in result.output  # Should point to model2
+
+
+@patch("neurobik.cli.Downloader.check_podman")
+@patch("neurobik.downloader.subprocess.run")
+@patch("neurobik.tui.NeurobikTUI.run")
+@patch("neurobik.cli.setup_logging")
+def test_cli_filters_downloaded_models(
+    mock_setup_logging,
+    mock_tui_run,
+    mock_subprocess_run,
+    mock_check_podman,
+    runner,
+    tmp_path,
+):
     """
     Test that CLI only shows models that haven't been downloaded yet (no confirmation file).
 
@@ -180,29 +265,26 @@ def test_cli_filters_downloaded_models(mock_setup_logging, mock_tui_run, mock_su
                 "repo_name": "test/repo1",
                 "model_name": "model1.gguf",
                 "location": str(tmp_path / "models" / "model1.gguf"),
-                "confirmation_file": str(tmp_path / ".model1_ready")
+                "confirmation_file": str(tmp_path / ".model1_ready"),
             },
             {
                 "repo_name": "test/repo2",
                 "model_name": "model2.gguf",
                 "location": str(tmp_path / "models" / "model2.gguf"),
-                "confirmation_file": str(tmp_path / ".model2_ready")
-            }
-        ]
+                "confirmation_file": str(tmp_path / ".model2_ready"),
+            },
+        ],
     }
 
     config_file = tmp_path / "config.yaml"
-    import yaml
-    with open(config_file, 'w') as f:
+    with open(config_file, "w", encoding="utf-8") as f:
         yaml.dump(config_data, f)
 
     # Pre-create confirmation file for first model (simulate already downloaded)
     (tmp_path / ".model1_ready").touch()
 
     # Mock TUI to select only the second model
-    mock_tui_run.return_value = [
-        {'name': 'model2.gguf', 'type': 'model'}
-    ]
+    mock_tui_run.return_value = [{"name": "model2.gguf", "type": "model"}]
 
     # Mock subprocess success
     mock_subprocess_run.return_value.returncode = 0
@@ -210,7 +292,7 @@ def test_cli_filters_downloaded_models(mock_setup_logging, mock_tui_run, mock_su
     # Mock logging
     mock_setup_logging.return_value = MagicMock()
 
-    result = runner.invoke(download, ['--config', str(config_file)])
+    result = runner.invoke(download, ["--config", str(config_file)])
 
     assert result.exit_code == 0
     # Check only the second model was downloaded
@@ -219,11 +301,19 @@ def test_cli_filters_downloaded_models(mock_setup_logging, mock_tui_run, mock_su
     assert (tmp_path / ".neurobik-ready").exists()
 
 
-@patch('neurobik.cli.Downloader.check_podman')
-@patch('neurobik.downloader.subprocess.run')
-@patch('neurobik.tui.NeurobikTUI.run')
-@patch('neurobik.cli.setup_logging')
-def test_cli_symlink_creation_failure(mock_setup_logging, mock_tui_run, mock_subprocess_run, mock_check_podman, runner, tmp_path, monkeypatch):
+@patch("neurobik.cli.Downloader.check_podman")
+@patch("neurobik.downloader.subprocess.run")
+@patch("neurobik.tui.NeurobikTUI.run")
+@patch("neurobik.cli.setup_logging")
+def test_cli_symlink_creation_failure(
+    mock_setup_logging,
+    mock_tui_run,
+    mock_subprocess_run,
+    mock_check_podman,
+    runner,
+    tmp_path,
+    monkeypatch,
+):
     """
     Test CLI behavior when symlink creation fails due to I/O or permission errors.
 
@@ -254,18 +344,17 @@ def test_cli_symlink_creation_failure(mock_setup_logging, mock_tui_run, mock_sub
                 "repo_name": "test/repo1",
                 "model_name": "model1.gguf",
                 "location": str(tmp_path / "models" / "model1.gguf"),
-                "confirmation_file": str(tmp_path / ".model1_ready")
+                "confirmation_file": str(tmp_path / ".model1_ready"),
             }
-        ]
+        ],
     }
 
     config_file = tmp_path / "config.yaml"
-    import yaml
-    with open(config_file, 'w') as f:
+    with open(config_file, "w", encoding="utf-8") as f:
         yaml.dump(config_data, f)
 
     # Mock TUI
-    mock_tui_run.return_value = [{'name': 'model1.gguf', 'type': 'model'}]
+    mock_tui_run.return_value = [{"name": "model1.gguf", "type": "model"}]
     mock_subprocess_run.return_value.returncode = 0
     mock_setup_logging.return_value = MagicMock()
 
@@ -275,17 +364,25 @@ def test_cli_symlink_creation_failure(mock_setup_logging, mock_tui_run, mock_sub
 
     monkeypatch.setattr(os, "symlink", failing_symlink)
 
-    result = runner.invoke(download, ['--config', str(config_file)])
+    result = runner.invoke(download, ["--config", str(config_file)])
 
     assert result.exit_code == 1
     assert "Failed to create symlink" in result.output
 
 
-@patch('neurobik.cli.Downloader.check_podman')
-@patch('neurobik.downloader.subprocess.run')
-@patch('neurobik.tui.NeurobikTUI.run')
-@patch('neurobik.cli.setup_logging')
-def test_cli_symlink_removal_failure(mock_setup_logging, mock_tui_run, mock_subprocess_run, mock_check_podman, runner, tmp_path, monkeypatch):
+@patch("neurobik.cli.Downloader.check_podman")
+@patch("neurobik.downloader.subprocess.run")
+@patch("neurobik.tui.NeurobikTUI.run")
+@patch("neurobik.cli.setup_logging")
+def test_cli_symlink_removal_failure(
+    mock_setup_logging,
+    mock_tui_run,
+    mock_subprocess_run,
+    mock_check_podman,
+    runner,
+    tmp_path,
+    monkeypatch,
+):
     """
     Test CLI behavior when existing symlink cannot be removed due to permissions.
 
@@ -320,14 +417,13 @@ def test_cli_symlink_removal_failure(mock_setup_logging, mock_tui_run, mock_subp
                 "repo_name": "test/repo1",
                 "model_name": "model1.gguf",
                 "location": str(tmp_path / "models" / "model1.gguf"),
-                "confirmation_file": str(tmp_path / ".model1_ready")
+                "confirmation_file": str(tmp_path / ".model1_ready"),
             }
-        ]
+        ],
     }
 
     config_file = tmp_path / "config.yaml"
-    import yaml
-    with open(config_file, 'w') as f:
+    with open(config_file, "w", encoding="utf-8") as f:
         yaml.dump(config_data, f)
 
     # Create existing symlink
@@ -335,7 +431,7 @@ def test_cli_symlink_removal_failure(mock_setup_logging, mock_tui_run, mock_subp
     os.symlink("dummy", str(symlink_path))
 
     # Mock TUI
-    mock_tui_run.return_value = [{'name': 'model1.gguf', 'type': 'model'}]
+    mock_tui_run.return_value = [{"name": "model1.gguf", "type": "model"}]
     mock_subprocess_run.return_value.returncode = 0
     mock_setup_logging.return_value = MagicMock()
 
@@ -345,7 +441,7 @@ def test_cli_symlink_removal_failure(mock_setup_logging, mock_tui_run, mock_subp
 
     monkeypatch.setattr(os, "unlink", failing_unlink)
 
-    result = runner.invoke(download, ['--config', str(config_file)])
+    result = runner.invoke(download, ["--config", str(config_file)])
 
     assert result.exit_code == 1
     assert "Failed to remove existing symlink" in result.output

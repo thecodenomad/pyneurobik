@@ -5,8 +5,8 @@
 - **Test all**: `pytest` (in Nix dev shell: `nix-shell dev.nix --run pytest`)
 - **Test single**: `pytest -k "test_function_name"`
 - **Test file**: `pytest tests/test_filename.py`
-- **Lint**: `pylint neurobik tests`
-- **Format**: `black neurobik tests`
+- **Lint**: `pylint neurobik tests` (in Nix dev shell: `nix-shell dev.nix --run "pylint neurobik tests"`) - configured for 120 char line length
+- **Format**: `black neurobik tests` (in Nix dev shell: `nix-shell dev.nix --run "black neurobik tests"`) - configured for 120 char line length
 
 ## Code Style
 - **Python version**: 3.12+

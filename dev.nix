@@ -13,6 +13,8 @@ let
     pytest-cov
     questionary
     huggingface-hub
+    black
+    pylint
   ]);
 in
 pkgs.mkShell {

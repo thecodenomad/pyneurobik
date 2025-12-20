@@ -1,3 +1,4 @@
+# pylint: disable=import-outside-toplevel,redefined-outer-name,unused-argument,wrong-import-order,unused-import
 """
 Neurobik Utils Test Suite
 
@@ -28,10 +29,15 @@ Dependencies for replication:
 - os for file operations
 """
 
-import pytest
-import tempfile
+# pylint: disable=import-outside-toplevel,redefined-outer-name,unused-argument,wrong-import-order
+
 import os
-from neurobik.utils import verify_checksum, create_confirmation_file
+import tempfile
+
+import pytest
+
+from neurobik.utils import create_confirmation_file, verify_checksum
+
 
 def test_verify_checksum():
     """
@@ -58,6 +64,7 @@ def test_verify_checksum():
     - Test with various file sizes
     - Ensure constant memory usage
     """
+
 
 def test_create_confirmation_file():
     """

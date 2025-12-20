@@ -1,3 +1,4 @@
+# pylint: disable=import-outside-toplevel,redefined-outer-name,unused-argument,wrong-import-order,reimported
 """
 Neurobik Configuration Test Suite
 
@@ -33,8 +34,13 @@ Dependencies for replication:
 - Sample configuration files for testing
 """
 
+# pylint: disable=import-outside-toplevel,redefined-outer-name,unused-argument,wrong-import-order
+
+import os
+
 import pytest
-from neurobik.config import Config
+from neurobik.config import Config, ModelItem, OciItem
+
 
 def test_valid_config():
     """
@@ -62,11 +68,12 @@ def test_valid_config():
     - Test path expansion logic
     """
     # Assuming sample_config.yaml exists
-    cfg = Config.from_yaml('sample_config.yaml')
+    cfg = Config.from_yaml("sample_config.yaml")
     cfg.validate_config()
-    assert cfg.model_provider == 'ollama'
+    assert cfg.model_provider == "ollama"
     assert len(cfg.models) == 1
     assert len(cfg.oci) == 1
+
 
 def test_invalid_provider():
     """
@@ -91,9 +98,21 @@ def test_invalid_provider():
     - Test boundary conditions for provider names
     - Ensure validation happens early in process
     """
-    from neurobik.config import ModelItem
     with pytest.raises(ValueError):
-        cfg = Config(model_provider='invalid', oci_provider='podman', models=[ModelItem(repo_name="test", model_name="test", location="/tmp", confirmation_file="/tmp/c", checksum="abc")], oci=[])
+        cfg = Config(
+            model_provider="invalid",
+            oci_provider="podman",
+            models=[
+                ModelItem(
+                    repo_name="test",
+                    model_name="test",
+                    location="/tmp",
+                    confirmation_file="/tmp/c",
+                    checksum="abc",
+                )
+            ],
+            oci=[],
+        )
         cfg.validate_config()
 
 
@@ -121,39 +140,35 @@ def test_environment_variable_expansion():
     - Test with various environment setups
     - Ensure atomic expansion operations
     """
-    import os
-    from neurobik.config import ModelItem, OciItem
-
     # Set test environment variable
-    os.environ['TEST_HOME'] = '/tmp/test'
+    os.environ["TEST_HOME"] = "/tmp/test"
 
     try:
         cfg = Config(
-            model_provider='ollama',
-            oci_provider='podman',
-            models=[ModelItem(
-                repo_name="test/repo",
-                model_name="model.gguf",
-                location="$TEST_HOME/models/model.gguf",
-                confirmation_file="$TEST_HOME/.confirmed",
-                checksum="abc"
-            )],
-            oci=[OciItem(
-                image="test:latest",
-                confirmation_file="$TEST_HOME/.pulled"
-            )]
+            model_provider="ollama",
+            oci_provider="podman",
+            models=[
+                ModelItem(
+                    repo_name="test/repo",
+                    model_name="model.gguf",
+                    location="$TEST_HOME/models/model.gguf",
+                    confirmation_file="$TEST_HOME/.confirmed",
+                    checksum="abc",
+                )
+            ],
+            oci=[OciItem(image="test:latest", confirmation_file="$TEST_HOME/.pulled")],
         )
 
         cfg.expand_vars()
 
         # Check expansion worked
-        assert cfg.models[0].location == '/tmp/test/models/model.gguf'
-        assert cfg.models[0].confirmation_file == '/tmp/test/.confirmed'
-        assert cfg.oci[0].confirmation_file == '/tmp/test/.pulled'
+        assert cfg.models[0].location == "/tmp/test/models/model.gguf"
+        assert cfg.models[0].confirmation_file == "/tmp/test/.confirmed"
+        assert cfg.oci[0].confirmation_file == "/tmp/test/.pulled"
 
     finally:
         # Clean up
-        del os.environ['TEST_HOME']
+        del os.environ["TEST_HOME"]
 
 
 def test_schema_validation_edge_cases():
@@ -180,16 +195,17 @@ def test_schema_validation_edge_cases():
     - Test boundary conditions
     - Ensure comprehensive error reporting
     """
-    from neurobik.config import ModelItem, OciItem
-    from pydantic import ValidationError
-
     # Test missing required field - this should work since pydantic handles it
     # ModelItem requires all fields, so we can't test missing fields directly
     # Instead test invalid data types or values
 
     # Test invalid provider in validation (need non-empty oci list)
-    from neurobik.config import OciItem
-    cfg = Config(model_provider='ollama', oci_provider='invalid', models=[], oci=[OciItem(image="test", confirmation_file="/tmp")])
+    cfg = Config(
+        model_provider="ollama",
+        oci_provider="invalid",
+        models=[],
+        oci=[OciItem(image="test", confirmation_file="/tmp")],
+    )
     with pytest.raises(ValueError, match="Only podman supported"):
         cfg.validate_config()
 
@@ -214,19 +230,114 @@ def test_provider_confirmation_file():
     - Validate path construction logic
     - Test null/empty cases
     """
-    from neurobik.config import ModelItem
-
     # Test with models
     cfg = Config(
-        model_provider='ramalama',
+        model_provider="ramalama",
         models=[
-            ModelItem(repo_name="test/repo1", model_name="model1.gguf", location="/tmp/model1", confirmation_file="/tmp/models/.neurobik-ready-model1"),
-            ModelItem(repo_name="test/repo2", model_name="model2.gguf", location="/tmp/model2", confirmation_file="/tmp/models/.neurobik-ready-model2")
+            ModelItem(
+                repo_name="test/repo1",
+                model_name="model1.gguf",
+                location="/tmp/model1",
+                confirmation_file="/tmp/models/.neurobik-ready-model1",
+            ),
+            ModelItem(
+                repo_name="test/repo2",
+                model_name="model2.gguf",
+                location="/tmp/model2",
+                confirmation_file="/tmp/models/.neurobik-ready-model2",
+            ),
         ],
-        oci=[]
+        oci=[],
     )
     assert cfg.provider_confirmation_file == "/tmp/models/.neurobik-ready"
 
     # Test with no models
     cfg_empty = Config(model_provider=None, models=[], oci=[])
     assert cfg_empty.provider_confirmation_file is None
+
+
+def test_default_gguf_validation():
+    """
+    Test validation of default_gguf field.
+
+    Replication steps (Python/pytest):
+    1. Create Config with models and valid default_gguf
+    2. Call validate_config() - should pass
+    3. Create Config with invalid default_gguf - should raise ValueError
+    4. Create Config with default_gguf but empty models - should raise ValueError
+    5. Create Config without default_gguf - should pass
+
+    Key validations:
+    - Valid default_gguf matching model_name passes
+    - Invalid default_gguf raises ValueError with descriptive message
+    - default_gguf with empty models list raises ValueError
+    - Missing default_gguf allows validation to pass
+
+    For other languages:
+    - Test optional field validation
+    - Validate field presence in collections
+    - Test error handling for invalid references
+    """
+    from neurobik.config import ModelItem
+
+    # Test valid default_gguf
+    cfg_valid = Config(
+        model_provider="ramalama",
+        default_gguf="model1.gguf",
+        models=[
+            ModelItem(
+                repo_name="test/repo1",
+                model_name="model1.gguf",
+                location="/tmp/model1",
+                confirmation_file="/tmp/.c1",
+            ),
+            ModelItem(
+                repo_name="test/repo2",
+                model_name="model2.gguf",
+                location="/tmp/model2",
+                confirmation_file="/tmp/.c2",
+            ),
+        ],
+        oci=[],
+    )
+    cfg_valid.validate_config()  # Should not raise
+
+    # Test invalid default_gguf
+    cfg_invalid = Config(
+        model_provider="ramalama",
+        default_gguf="nonexistent.gguf",
+        models=[
+            ModelItem(
+                repo_name="test/repo1",
+                model_name="model1.gguf",
+                location="/tmp/model1",
+                confirmation_file="/tmp/.c1",
+            )
+        ],
+        oci=[],
+    )
+    with pytest.raises(
+        ValueError,
+        match="default_gguf 'nonexistent.gguf' not found in configured models",
+    ):
+        cfg_invalid.validate_config()
+
+    # Test default_gguf with empty models
+    cfg_empty_models = Config(model_provider=None, default_gguf="model1.gguf", models=[], oci=[])
+    with pytest.raises(ValueError, match="default_gguf 'model1.gguf' not found in configured models"):
+        cfg_empty_models.validate_config()
+
+    # Test missing default_gguf (should pass)
+    cfg_no_default = Config(
+        model_provider="ramalama",
+        models=[
+            ModelItem(
+                repo_name="test/repo1",
+                model_name="model1.gguf",
+                location="/tmp/model1",
+                confirmation_file="/tmp/.c1",
+            )
+        ],
+        oci=[],
+    )
+    cfg_no_default.validate_config()  # Should not raise

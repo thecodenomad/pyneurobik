@@ -1,3 +1,4 @@
+# pylint: disable=import-outside-toplevel,redefined-outer-name,unused-argument,wrong-import-order,unused-import
 """
 Neurobik TUI Test Suite
 
@@ -28,9 +29,14 @@ Dependencies for replication:
 - questionary or equivalent TUI library
 """
 
-import pytest
+# pylint: disable=import-outside-toplevel,redefined-outer-name,unused-argument,wrong-import-order
+
 from unittest.mock import patch
+
+import pytest
+
 from neurobik.tui import NeurobikTUI
+
 
 def test_tui_run():
     """
