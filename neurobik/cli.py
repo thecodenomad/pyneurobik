@@ -181,6 +181,10 @@ def download(config, relink_default_gguf):
 ╰─═══════════════════════════════════════════════════════════════════════════─╯"""
         )
 
+    except KeyboardInterrupt:
+        logger.info("Download interrupted by user")
+        click.echo("\nDownload interrupted by user. Cleaning up...", err=True)
+        sys.exit(130)  # Standard exit code for SIGINT
     except (ValueError, OSError, RuntimeError) as e:
         logger.error(f"Error: {e}")
         click.echo(f"Error: {e}", err=True)
