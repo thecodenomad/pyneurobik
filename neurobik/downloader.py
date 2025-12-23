@@ -76,7 +76,8 @@ class Downloader:
             context = os.path.dirname(containerfile)
             cmd = ["podman", "build", "-t", image]
             if build_args:
-                cmd.extend(build_args)
+                for arg in build_args:
+                    cmd.extend(["--build-arg", arg])
             cmd.extend(["-f", containerfile, context])
             subprocess.run(cmd, check=True)
         else:

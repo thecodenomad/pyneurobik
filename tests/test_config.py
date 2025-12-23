@@ -322,10 +322,9 @@ def test_default_gguf_validation():
     ):
         cfg_invalid.validate_config()
 
-    # Test default_gguf with empty models
+    # Test default_gguf with empty models (should pass - validation happens later in _relink_default_model)
     cfg_empty_models = Config(model_provider=None, default_gguf="model1.gguf", models=[], oci=[])
-    with pytest.raises(ValueError, match="default_gguf 'model1.gguf' not found in configured models"):
-        cfg_empty_models.validate_config()
+    cfg_empty_models.validate_config()  # Should not raise
 
     # Test missing default_gguf (should pass)
     cfg_no_default = Config(

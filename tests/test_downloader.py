@@ -233,6 +233,108 @@ def test_pull_oci_with_containerfile(mock_subprocess):
     - Test marker file creation
     """
 
+    from unittest.mock import MagicMock
+
+    # Setup
+    mock_subprocess.return_value = MagicMock(returncode=0)
+
+    downloader = Downloader()
+    image = "test-image:latest"
+
+    # Create temporary directory for containerfile
+    with tempfile.TemporaryDirectory() as temp_dir:
+        containerfile = os.path.join(temp_dir, "Containerfile.test")
+        context = temp_dir
+        confirmation_file = os.path.join(temp_dir, "test-confirmation")
+
+        # Create temporary containerfile
+        with open(containerfile, 'w', encoding='utf-8') as f:
+            f.write("FROM ubuntu\n")
+
+        # Test with build_args
+        build_args = ["ARG1=value1", "ARG2=value2"]
+        downloader.pull_oci(image, confirmation_file, containerfile, build_args)
+
+        # Verify subprocess.run was called with correct command
+        expected_cmd = [
+            "podman", "build", "-t", image,
+            "--build-arg", "ARG1=value1",
+            "--build-arg", "ARG2=value2",
+            "-f", containerfile, context
+        ]
+        mock_subprocess.assert_called_once_with(expected_cmd, check=True)
+
+        # Verify confirmation file was created
+        assert os.path.exists(confirmation_file)
+
+
+@pytest.mark.parametrize("build_args,expected_build_args", [
+    # No build args
+    (None, []),
+    ([], []),
+    # One build arg
+    (["ARG1=value1"], ["--build-arg", "ARG1=value1"]),
+    # Multiple build args
+    (["ARG1=value1", "ARG2=value2"], ["--build-arg", "ARG1=value1", "--build-arg", "ARG2=value2"]),
+    (["ROCM_INDEX_URL=https://example.com"], ["--build-arg", "ROCM_INDEX_URL=https://example.com"]),
+])
+@patch("neurobik.downloader.subprocess.run")
+def test_pull_oci_build_args(mock_subprocess, build_args, expected_build_args):
+    """
+    Test OCI container build with various build argument configurations.
+
+    Tests 0, 1, and multiple build arguments to ensure proper command construction.
+
+    Replication steps (Python/pytest):
+    1. Mock subprocess.run to return success
+    2. Define containerfile path and image name
+    3. Call pull_oci() with different build_args configurations
+    4. Assert subprocess.run called with correctly formatted build args
+    5. Verify confirmation file created
+    6. Clean up test files
+
+    Key validations:
+    - Build args are properly formatted with --build-arg flags
+    - Command includes correct number of --build-arg pairs
+    - No build args when None or empty list provided
+    - Single build arg handled correctly
+    - Multiple build args all included
+
+    For other languages:
+    - Test parameter formatting for CLI tools
+    - Verify conditional argument inclusion
+    - Test array/list processing for command construction
+    """
+    from unittest.mock import MagicMock
+
+    # Setup
+    mock_subprocess.return_value = MagicMock(returncode=0)
+
+    downloader = Downloader()
+    image = "test-image:latest"
+
+    # Create temporary directory for containerfile
+    with tempfile.TemporaryDirectory() as temp_dir:
+        containerfile = os.path.join(temp_dir, "Containerfile.test")
+        context = temp_dir
+        confirmation_file = os.path.join(temp_dir, "test-confirmation")
+
+        # Create temporary containerfile
+        with open(containerfile, 'w', encoding='utf-8') as f:
+            f.write("FROM ubuntu\n")
+
+        downloader.pull_oci(image, confirmation_file, containerfile, build_args)
+
+        # Build expected command
+        expected_cmd = ["podman", "build", "-t", image]
+        expected_cmd.extend(expected_build_args)
+        expected_cmd.extend(["-f", containerfile, context])
+
+        mock_subprocess.assert_called_once_with(expected_cmd, check=True)
+
+        # Verify confirmation file was created
+        assert os.path.exists(confirmation_file)
+
 
 def test_create_default_symlink(tmp_path):
     """
